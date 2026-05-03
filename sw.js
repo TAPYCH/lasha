@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apsny-guide-v5';
+const CACHE_NAME = 'apsny-guide-v6';
 
 const PRECACHE_URLS = ['./index.html', './admin.html', './media-store.js', './manifest.json'];
 

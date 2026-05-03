@@ -65,6 +65,47 @@
             display: block;
         }
 
+        /* Полноэкранный просмотр медиа */
+        #media-lightbox-strip {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            gap: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            overscroll-behavior-x: contain;
+        }
+        #media-lightbox-strip::-webkit-scrollbar { display: none; }
+        .lightbox-slide {
+            flex: 0 0 100%;
+            width: 100%;
+            min-width: 100%;
+            height: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 0.5rem;
+        }
+        .lightbox-media {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        video.lightbox-media {
+            width: 100%;
+            max-height: min(85vh, 100%);
+            background: #000;
+        }
+
         .auth-tab-active { background: white; color: #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-weight: 700; }
         .auth-tab-idle { color: #6b7280; font-weight: 600; }
         .auth-role-active { border-color: rgba(16,185,129,0.55); background: rgba(236,253,245,0.95); color: #059669; }
@@ -351,6 +392,21 @@
         </div>
     </div>
 
+    <!-- Полноэкранный просмотр фото/видео (листание, если несколько) -->
+    <div id="media-lightbox" class="fixed inset-0 z-[100] bg-black hidden flex flex-col" aria-hidden="true">
+        <div class="flex items-center justify-between px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shrink-0 bg-black/90 border-b border-white/10">
+            <button type="button" onclick="closeMediaLightbox()" class="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center active:bg-white/20" aria-label="Закрыть">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <span id="media-lightbox-counter" class="text-sm font-semibold text-white/90 tabular-nums hidden"></span>
+            <span class="w-11 h-11 shrink-0 flex items-center justify-center text-white/50 text-xs" title="Нажмите на медиа или свайпайте"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></span>
+        </div>
+        <div class="flex-1 min-h-0 relative touch-pan-x">
+            <div id="media-lightbox-strip"></div>
+        </div>
+        <p id="media-lightbox-hint" class="hidden text-center text-white/50 text-xs pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 shrink-0">Свайп влево/вправо — следующее фото</p>
+    </div>
+
     <!-- МОДАЛКА РЕДАКТИРОВАНИЯ ПРОФИЛЯ -->
     <div id="edit-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl slide-up">
@@ -590,6 +646,78 @@
         let activeBookings = [];
         let currentItem = null;
         let itemType = 'tour';
+        let detailGallerySlides = [];
+        let detailTourMainSlides = [];
+        let detailAttractionSlides = [];
+
+        function onLightboxScrollEv() {
+            const strip = document.getElementById('media-lightbox-strip');
+            if (!strip || strip.children.length <= 1) return;
+            const w = strip.clientWidth || 1;
+            const total = strip.children.length;
+            const i = Math.min(total - 1, Math.max(0, Math.round(strip.scrollLeft / w)));
+            document.getElementById('media-lightbox-counter').textContent = `${i + 1} / ${total}`;
+        }
+
+        function openMediaLightbox(slides, startIdx = 0) {
+            if (!slides || !slides.length) return;
+            const lb = document.getElementById('media-lightbox');
+            const strip = document.getElementById('media-lightbox-strip');
+            const counter = document.getElementById('media-lightbox-counter');
+            const hint = document.getElementById('media-lightbox-hint');
+
+            strip.innerHTML = '';
+            for (const s of slides) {
+                const slideEl = document.createElement('div');
+                slideEl.className = 'lightbox-slide';
+                if (s.isVideo) {
+                    const v = document.createElement('video');
+                    v.src = s.src;
+                    v.controls = true;
+                    v.playsInline = true;
+                    v.className = 'lightbox-media';
+                    v.setAttribute('preload', 'metadata');
+                    slideEl.appendChild(v);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = s.src;
+                    img.alt = '';
+                    img.className = 'lightbox-media';
+                    img.draggable = false;
+                    slideEl.appendChild(img);
+                }
+                strip.appendChild(slideEl);
+            }
+
+            const multi = slides.length > 1;
+            counter.classList.toggle('hidden', !multi);
+            hint.classList.toggle('hidden', !multi);
+            counter.textContent = multi ? `${Math.min(startIdx + 1, slides.length)} / ${slides.length}` : '';
+
+            lb.classList.remove('hidden');
+            lb.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+
+            strip.removeEventListener('scroll', onLightboxScrollEv);
+            strip.addEventListener('scroll', onLightboxScrollEv, { passive: true });
+
+            requestAnimationFrame(() => {
+                const w = strip.clientWidth;
+                strip.scrollLeft = startIdx * w;
+                onLightboxScrollEv();
+            });
+        }
+
+        function closeMediaLightbox() {
+            const lb = document.getElementById('media-lightbox');
+            const strip = document.getElementById('media-lightbox-strip');
+            strip.removeEventListener('scroll', onLightboxScrollEv);
+            strip.querySelectorAll('video').forEach((v) => v.pause());
+            strip.innerHTML = '';
+            lb.classList.add('hidden');
+            lb.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
         let guests = 1;
         let timerInterval;
 
@@ -900,38 +1028,79 @@
                 <p class="text-sm text-gray-600 font-medium">${currentItem.extraDesc}</p>
             `;
 
+            detailGallerySlides = [];
+            detailTourMainSlides = [];
+            detailAttractionSlides = [];
+
             const mediaBox = document.getElementById('detail-media');
+            mediaBox.onclick = null;
+
             if (type === 'tour') {
                 const mainUrl = await ApsnyMedia.getBlobUrl(currentItem.mainMedia);
+                detailTourMainSlides = [{ src: mainUrl, isVideo: !!currentItem.isMainVideo }];
                 mediaBox.innerHTML = currentItem.isMainVideo
-                    ? `<video src="${mainUrl}" autoplay loop muted playsinline class="w-full h-full object-cover"></video>`
-                    : `<img src="${mainUrl}" alt="" class="w-full h-full object-cover">`;
+                    ? `<div class="tap-fullscreen w-full h-full cursor-pointer relative"><video src="${mainUrl}" autoplay loop muted playsinline class="w-full h-full object-cover pointer-events-none"></video><span class="absolute bottom-3 right-3 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm pointer-events-none"><i class="fa-solid fa-expand mr-1"></i>На весь экран</span></div>`
+                    : `<div class="tap-fullscreen w-full h-full cursor-pointer relative"><img src="${mainUrl}" alt="" class="w-full h-full object-cover pointer-events-none"><span class="absolute bottom-3 right-3 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm pointer-events-none"><i class="fa-solid fa-expand mr-1"></i>На весь экран</span></div>`;
             } else {
-                let carousel = '<div class="hotel-gallery-scroll w-full h-full">';
+                detailGallerySlides = [];
                 for (const slide of ApsnyMedia.hotelGallery(currentItem)) {
                     const u = await ApsnyMedia.getBlobUrl(slide.media);
-                    carousel += slide.isVideo
-                        ? `<div class="hotel-gallery-slide"><video src="${u}" autoplay loop muted playsinline></video></div>`
-                        : `<div class="hotel-gallery-slide"><img src="${u}" alt=""></div>`;
+                    detailGallerySlides.push({ src: u, isVideo: !!slide.isVideo });
                 }
+                let carousel = '<div class="hotel-gallery-scroll w-full h-full">';
+                detailGallerySlides.forEach((s, i) => {
+                    const u = s.src;
+                    carousel += s.isVideo
+                        ? `<div class="hotel-gallery-slide cursor-pointer relative"><video src="${u}" autoplay loop muted playsinline class="pointer-events-none w-full h-full object-cover"></video><span class="absolute bottom-3 right-3 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm pointer-events-none"><i class="fa-solid fa-expand mr-1"></i>${detailGallerySlides.length > 1 ? i + 1 + '/' + detailGallerySlides.length : 'Экран'}</span></div>`
+                        : `<div class="hotel-gallery-slide cursor-pointer relative"><img src="${u}" alt="" class="pointer-events-none w-full h-full object-cover"><span class="absolute bottom-3 right-3 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm pointer-events-none"><i class="fa-solid fa-expand mr-1"></i>${detailGallerySlides.length > 1 ? i + 1 + '/' + detailGallerySlides.length : 'Экран'}</span></div>`;
+                });
                 carousel += '</div>';
                 mediaBox.innerHTML = carousel;
             }
+
+            mediaBox.onclick = (e) => {
+                const slide = e.target.closest('.hotel-gallery-slide');
+                if (slide && detailGallerySlides.length) {
+                    const slidesEls = [...slide.parentElement.querySelectorAll('.hotel-gallery-slide')];
+                    const idx = slidesEls.indexOf(slide);
+                    if (idx >= 0) openMediaLightbox(detailGallerySlides, idx);
+                    return;
+                }
+                if (e.target.closest('.tap-fullscreen') && detailTourMainSlides.length) {
+                    openMediaLightbox(detailTourMainSlides, 0);
+                }
+            };
 
             const attrSec = document.getElementById('detail-attractions-section');
             const attrBox = document.getElementById('detail-attractions');
             if (type === 'tour' && currentItem.attractions.length > 0) {
                 attrSec.classList.remove('hidden');
                 attrBox.innerHTML = '';
+                detailAttractionSlides = [];
                 for (const a of currentItem.attractions) {
                     const u = await ApsnyMedia.getBlobUrl(a.media);
-                    const m = a.isVideo
-                        ? `<video src="${u}" autoplay loop muted playsinline class="w-full h-48 object-cover rounded-2xl mt-3"></video>`
-                        : `<img src="${u}" alt="" class="w-full h-48 object-cover rounded-2xl mt-3 shadow-sm">`;
-                    attrBox.innerHTML += `<div class="mb-4"><h4 class="font-bold text-gray-800"><i class="fa-solid fa-star text-amber-400 mr-1 text-sm"></i> ${a.name}</h4><p class="text-sm text-gray-600 mt-1">${a.desc}</p>${m}</div>`;
+                    detailAttractionSlides.push({ src: u, isVideo: !!a.isVideo });
                 }
+                currentItem.attractions.forEach((a, idx) => {
+                    const u = detailAttractionSlides[idx].src;
+                    const isV = detailAttractionSlides[idx].isVideo;
+                    const m = isV
+                        ? `<video src="${u}" autoplay loop muted playsinline class="w-full h-48 object-cover pointer-events-none"></video>`
+                        : `<img src="${u}" alt="" class="w-full h-48 object-cover shadow-sm pointer-events-none">`;
+                    const badge =
+                        detailAttractionSlides.length > 1
+                            ? `<span class="absolute top-2 right-2 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full">${idx + 1}/${detailAttractionSlides.length}</span>`
+                            : '';
+                    attrBox.innerHTML += `<div class="mb-4"><h4 class="font-bold text-gray-800"><i class="fa-solid fa-star text-amber-400 mr-1 text-sm"></i> ${a.name}</h4><p class="text-sm text-gray-600 mt-1">${a.desc}</p><div class="attr-media-wrap relative mt-3 rounded-2xl overflow-hidden cursor-pointer ring-2 ring-transparent active:ring-emerald-400/60" data-lb-index="${idx}" role="button" tabindex="0">${badge}<span class="absolute bottom-2 right-2 bg-black/45 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none"><i class="fa-solid fa-expand mr-1"></i>Весь экран</span>${m}</div></div>`;
+                });
+                attrBox.onclick = (e) => {
+                    const w = e.target.closest('.attr-media-wrap');
+                    if (!w || !detailAttractionSlides.length) return;
+                    openMediaLightbox(detailAttractionSlides, +w.dataset.lbIndex);
+                };
             } else {
                 attrSec.classList.add('hidden');
+                attrBox.onclick = null;
             }
 
             const screen = document.getElementById('detail-screen');
@@ -940,6 +1109,7 @@
         }
 
         function closeDetails() {
+            closeMediaLightbox();
             const screen = document.getElementById('detail-screen');
             screen.classList.remove('slide-up');
             screen.classList.add('slide-down');
