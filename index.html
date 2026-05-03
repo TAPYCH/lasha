@@ -620,6 +620,39 @@
 
         const dataReady = bootstrapData();
 
+        async function warmMediaCache() {
+            try {
+                await dataReady;
+                if (typeof location === 'undefined' || (location.protocol !== 'http:' && location.protocol !== 'https:')) return;
+
+                const urls = new Set();
+
+                for (const t of dbTours || []) {
+                    if (t.mainMedia && !ApsnyMedia.isLocalRef(t.mainMedia)) urls.add(t.mainMedia);
+                    for (const a of t.attractions || []) {
+                        if (a.media && !ApsnyMedia.isLocalRef(a.media)) urls.add(a.media);
+                    }
+                }
+                for (const h of dbHotels || []) {
+                    for (const g of ApsnyMedia.hotelGallery(h)) {
+                        if (g.media && !ApsnyMedia.isLocalRef(g.media)) urls.add(g.media);
+                    }
+                }
+
+                const all = [...urls];
+                const batchSize = 6;
+                for (let i = 0; i < all.length; i += batchSize) {
+                    const batch = all.slice(i, i + batchSize);
+                    await Promise.all(batch.map((u) => fetch(u, { cache: 'force-cache' }).catch(() => null)));
+                }
+            } catch (_) {
+                // best-effort warm-up
+            }
+        }
+
+        // Прогрев кеша медиа сразу после старта приложения.
+        warmMediaCache();
+
         window.addEventListener('storage', (e) => {
             if (useBackend) return;
             if (e.key === LS_TOURS && e.newValue) {
@@ -798,6 +831,16 @@
         }
 
         async function tryRestoreSession() {
+            const raw = localStorage.getItem('apsny_session_backup');
+            const backupUser = (() => {
+                if (!raw) return null;
+                try {
+                    return JSON.parse(raw);
+                } catch {
+                    return null;
+                }
+            })();
+
             try {
                 const healthOk = await fetch('/api/health').then((r) => r.ok);
                 if (healthOk) {
@@ -808,18 +851,19 @@
                         localStorage.setItem('apsny_session_backup', JSON.stringify(u));
                         return true;
                     }
-                    localStorage.removeItem('apsny_session_backup');
+                    // На HTTP без SSL secure-cookie может не отправляться: используем локальный бэкап.
+                    if (backupUser) {
+                        applyUser(backupUser);
+                        return true;
+                    }
                     return false;
                 }
-            } catch (_) { /* offline */ }
-            const raw = localStorage.getItem('apsny_session_backup');
-            if (!raw) return false;
-            try {
-                applyUser(JSON.parse(raw));
-                return true;
-            } catch {
-                return false;
+            } catch (_) {
+                // offline fallback
             }
+            if (!backupUser) return false;
+            applyUser(backupUser);
+            return true;
         }
 
         async function enterMainApp() {

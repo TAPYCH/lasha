@@ -1,6 +1,6 @@
-const CACHE_NAME = 'apsny-guide-v6';
+const CACHE_NAME = 'apsny-guide-v7';
 
-const PRECACHE_URLS = ['./index.html', './admin.html', './media-store.js', './manifest.json'];
+const PRECACHE_URLS = ['./index.html', './admin.html', './media-store.js', './manifest.json', './sw.js'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,22 +23,62 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+  const sameOrigin = url.origin === self.location.origin;
 
-  if (url.pathname.startsWith('/api/')) {
+  // Не кешируем auth-эндпоинты с персональными данными.
+  if (url.pathname.startsWith('/api/auth/')) {
     event.respondWith(
       fetch(req).catch(() => new Response(JSON.stringify({ error: 'offline' }), { status: 503 })),
     );
     return;
   }
 
-  if (url.pathname.startsWith('/uploads/')) {
-    event.respondWith(
-      fetch(req).catch(() => caches.match(req)),
-    );
+  // Данные каталога: сеть -> кеш, офлайн -> кеш.
+  if (url.pathname === '/api/tours' || url.pathname === '/api/hotels' || url.pathname === '/api/health') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const net = await fetch(req);
+        if (net && net.ok) await cache.put(req, net.clone());
+        return net;
+      } catch (_) {
+        const cached = await cache.match(req);
+        return cached || new Response(JSON.stringify({ error: 'offline' }), { status: 503 });
+      }
+    })());
     return;
   }
 
-  event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req)),
-  );
+  // Медиа: сначала кеш, если нет — загрузить и сохранить.
+  if (url.pathname.startsWith('/uploads/')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const net = await fetch(req);
+        if (net && net.ok) await cache.put(req, net.clone());
+        return net;
+      } catch (_) {
+        return new Response('', { status: 504 });
+      }
+    })());
+    return;
+  }
+
+  // Статика: кеш-first + фоновое обновление.
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(req);
+    const networkPromise = fetch(req)
+      .then((res) => {
+        if (sameOrigin && res && res.ok) cache.put(req, res.clone());
+        return res;
+      })
+      .catch(() => null);
+
+    if (cached) return cached;
+    const net = await networkPromise;
+    return net || new Response('offline', { status: 503 });
+  })());
 });
