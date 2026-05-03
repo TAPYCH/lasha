@@ -1,0 +1,21 @@
+{
+  "name": "Апсны-Гид",
+  "short_name": "Апсны-Гид",
+  "description": "Приложение для туризма и экскурсий по Абхазии",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "https://ui-avatars.com/api/?name=Ag&background=10b981&color=fff&size=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://ui-avatars.com/api/?name=Ag&background=10b981&color=fff&size=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

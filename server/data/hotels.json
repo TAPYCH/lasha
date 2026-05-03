@@ -1,0 +1,66 @@
+[
+  {
+    "id": "h_amra",
+    "title": "GRANDIS HOTEL",
+    "location": "Пицунда",
+    "shortDesc": "Роскошный отель с бассейном",
+    "fullDesc": "Отель находится в шаговой доступности до моря, 4 минуты пешком и вы на тихом чистом пляже, 15 минут пешком и вы в центре Пицунде",
+    "price": 3500,
+    "extraTitle": "Удобства",
+    "extraDesc": "✓ Первая линия  ✓ Spa-центр  ✓ Бассейн  ✓ Ресторан",
+    "gallery": [
+      {
+        "media": "/uploads/0fe0c476-38d2-4292-8e20-f45ee6313b4b.jpg",
+        "isVideo": false
+      },
+      {
+        "media": "/uploads/9ec103fb-1844-48c3-92f8-90069059fc19.jpg",
+        "isVideo": false
+      },
+      {
+        "media": "/uploads/467435f9-4dd3-4a04-be12-9b0de3e75be2.jpg",
+        "isVideo": false
+      }
+    ],
+    "rooms": [
+      {
+        "name": "Стандарт (Вид на горы)",
+        "price": 3500
+      },
+      {
+        "name": "Делюкс (Вид на море)",
+        "price": 5000
+      }
+    ]
+  },
+  {
+    "id": "h_abkhazia",
+    "title": "Отель «GEGA»",
+    "location": "Гагра",
+    "shortDesc": "Уютный отель в центре святых мест.",
+    "fullDesc": "Комфортабельный отель на выезде из Гагры. Отличный вариант для культурного отдыха.Есть большой бассейн",
+    "price": 4000,
+    "extraTitle": "Удобства",
+    "extraDesc": "✓ Центр города  ✓ Завтраки  ✓ Wi-Fi  ✓ Парковка ✓ Бассейн ",
+    "gallery": [
+      {
+        "media": "/uploads/624e1d5f-f2fb-4dde-b38f-b499e5323895.jpg",
+        "isVideo": false
+      },
+      {
+        "media": "/uploads/4aeb017f-078a-48e0-a6f2-a83306624c2d.jpg",
+        "isVideo": false
+      }
+    ],
+    "rooms": [
+      {
+        "name": "Эконом",
+        "price": 4000
+      },
+      {
+        "name": "Улучшенный",
+        "price": 5500
+      }
+    ]
+  }
+]

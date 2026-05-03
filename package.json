@@ -1,0 +1,8 @@
+{
+  "name": "apsny-guide",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix server start",
+    "seed": "node scripts/extract-seed.js"
+  }
+}

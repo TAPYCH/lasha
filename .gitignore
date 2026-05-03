@@ -1,0 +1,22 @@
+# Зависимости (на сервере: npm install внутри server/)
+server/node_modules/
+
+# Секреты и локальный конфиг
+.env
+.env.*
+!.env.example
+
+# SQLite WAL/SHM — не коммитить; в репозитории только users.db (после checkpoint)
+server/data/*.db-wal
+server/data/*.db-shm
+
+# Логи и системный мусор
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp

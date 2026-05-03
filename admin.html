@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Апсны-Гид | Панель Администратора</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .nav-btn-active { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .nav-btn-idle { color: #94a3b8; }
+        .nav-btn-idle:hover { background: #1e293b; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-user-shield text-emerald-500 text-2xl"></i>
+            <h1 class="text-xl font-bold">Admin Dashboard <span class="text-xs font-normal text-slate-400 ml-2 border border-slate-700 px-2 py-1 rounded">v2</span></h1>
+            <span id="api-status" class="hidden text-xs font-semibold text-emerald-400 ml-3 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25"><i class="fa-solid fa-link mr-1"></i>Сервер API</span>
+        </div>
+        <div class="flex space-x-4">
+            <a href="index.html" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-sm font-semibold px-4 py-2 rounded-lg transition-all"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>Открыть сайт</a>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex md:flex-col">
+            <nav class="p-4 space-y-2">
+                <button type="button" id="nav-tours" onclick="switchSection('tours')" class="w-full text-left px-4 py-3 rounded-xl font-bold nav-btn-active"><i class="fa-solid fa-map-location-dot mr-3"></i>Экскурсии</button>
+                <button type="button" id="nav-hotels" onclick="switchSection('hotels')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition-all nav-btn-idle"><i class="fa-solid fa-hotel mr-3"></i>Гостиницы</button>
+                <button type="button" onclick="resetData()" class="w-full text-left px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl font-semibold transition-all mt-8"><i class="fa-solid fa-trash-arrow-up mr-3"></i>Сбросить данные</button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-6 relative">
+            <!-- Экскурсии -->
+            <div id="section-tours" class="max-w-5xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Управление направлениями</h2>
+                    <button onclick="openEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg transition-all"><i class="fa-solid fa-plus mr-2"></i>Добавить направление</button>
+                </div>
+                <div id="admin-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- Гостиницы -->
+            <div id="section-hotels" class="max-w-5xl mx-auto hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Управление гостиницами</h2>
+                    <button onclick="openHotelEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg transition-all"><i class="fa-solid fa-plus mr-2"></i>Добавить гостиницу</button>
+                </div>
+                <div id="admin-hotels-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Редактор экскурсий -->
+    <div id="editor-modal" class="fixed inset-0 z-50 hidden justify-end">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeEditor()"></div>
+        <div class="w-full max-w-2xl bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="editor-panel">
+            <div class="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-900">
+                <h3 class="text-xl font-bold" id="editor-title">Добавить/Изменить</h3>
+                <button onclick="closeEditor()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                <input type="hidden" id="edit-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Название направления</label>
+                        <input type="text" id="edit-name" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white placeholder-slate-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Цена (от ₽)</label>
+                        <input type="number" id="edit-price" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Короткое описание</label>
+                    <input type="text" id="edit-short" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Полное описание</label>
+                    <textarea id="edit-full" rows="3" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Длительность</label>
+                        <input type="text" id="edit-meta" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Главное медиа — ссылка</label>
+                        <input type="text" id="edit-media" placeholder="https://… или пусто, если файл" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <label class="block text-xs font-bold text-slate-400">Загрузить фото или видео</label>
+                    <p id="upload-hint-main" class="text-[11px] text-slate-500 mb-1">При запуске через Node файлы попадают на сервер в каталог <code class="text-slate-400">server/uploads</code>.</p>
+                    <input type="file" id="edit-media-file" accept="image/*,video/*" class="w-full text-sm text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:text-white file:font-semibold">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="edit-main-is-video" class="rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500">
+                            Отображать как видео
+                        </label>
+                        <span id="edit-main-media-ref" class="text-[10px] text-slate-500 font-mono truncate max-w-full"></span>
+                    </div>
+                    <div id="edit-main-preview" class="rounded-xl overflow-hidden border border-slate-600 bg-black/20 min-h-[120px] flex items-center justify-center text-slate-500 text-sm">Предпросмотр</div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Краткий маршрут</label>
+                    <input type="text" id="edit-route" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                </div>
+
+                <div class="border-t border-slate-700 pt-5 mt-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-emerald-400"><i class="fa-solid fa-star mr-2"></i>Достопримечательности</h4>
+                        <button type="button" onclick="addAttractionField()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white"><i class="fa-solid fa-plus mr-1"></i>Добавить</button>
+                    </div>
+                    <div id="attractions-container" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeEditor()" class="px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
+                <button onclick="saveTour()" class="px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Редактор гостиниц -->
+    <div id="hotel-editor-modal" class="fixed inset-0 z-50 hidden justify-end">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeHotelEditor()"></div>
+        <div class="w-full max-w-2xl bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="hotel-editor-panel">
+            <div class="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-900">
+                <h3 class="text-xl font-bold" id="hotel-editor-title">Гостиница</h3>
+                <button onclick="closeHotelEditor()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                <input type="hidden" id="hedit-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Название</label>
+                        <input type="text" id="hedit-title" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Локация</label>
+                        <input type="text" id="hedit-location" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Цена от (₽ / ночь)</label>
+                        <input type="number" id="hedit-price" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Заголовок блока удобств</label>
+                        <input type="text" id="hedit-extra-title" value="Удобства" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Короткое описание</label>
+                    <input type="text" id="hedit-short" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Полное описание</label>
+                    <textarea id="hedit-full" rows="3" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">Удобства (текст)</label>
+                    <textarea id="hedit-extra-desc" rows="2" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white"></textarea>
+                </div>
+
+                <div class="border-t border-slate-700 pt-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-emerald-400"><i class="fa-solid fa-images mr-2"></i>Фото и видео слайдера</h4>
+                        <button type="button" onclick="addGalleryRow()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white"><i class="fa-solid fa-plus mr-1"></i>Добавить кадр</button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mb-3">Первый кадр — главное изображение в списке отелей.</p>
+                    <div id="gallery-container" class="space-y-4"></div>
+                </div>
+
+                <div class="border-t border-slate-700 pt-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-emerald-400"><i class="fa-solid fa-door-open mr-2"></i>Категории номеров</h4>
+                        <button type="button" onclick="addRoomRow()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white"><i class="fa-solid fa-plus mr-1"></i>Номер</button>
+                    </div>
+                    <div id="rooms-container" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end space-x-3">
+                <button onclick="closeHotelEditor()" class="px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
+                <button onclick="saveHotel()" class="px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="media-store.js"></script>
+    <script>
+        const LS_TOURS = 'apsny_tours';
+        const LS_HOTELS = 'apsny_hotels';
+
+        let useApi = false;
+        let dbTours = [];
+        let dbHotels = [];
+
+        const defaultTours = [
+            { id: 'gagra', title: 'Гагра', shortDesc: 'Популярный курорт с субтропическим климатом и богатой историей.', fullDesc: 'Гагра — популярный курортный город в Абхазии.', price: 1500, meta: '4-5 часов', extraTitle: 'Маршрут', extraDesc: 'Смотровая → Гагрипш → Колоннада', mainMedia: 'https://picsum.photos/seed/gagra/800/1200', isMainVideo: false, attractions: [{ name: 'Ресторан «Гагрипш»', desc: 'Символ города.', media: 'https://picsum.photos/seed/gagripsh/600/800', isVideo: false }, { name: 'Гагрская колоннада', desc: 'Архитектурный комплекс.', media: 'https://picsum.photos/seed/colonnade/600/800', isVideo: false }] },
+            { id: 'ritsa', title: 'Озеро Рица', shortDesc: 'Горное озеро.', fullDesc: 'Главная природная достопримечательность Абхазии.', price: 2500, meta: 'Весь день', extraTitle: 'Маршрут', extraDesc: 'Ущелье → Озеро', mainMedia: 'https://picsum.photos/seed/ritsa/800/1200', isMainVideo: false, attractions: [] }
+        ];
+
+        const defaultHotels = [
+            { id: 'h_amra', title: 'Amra Park-Hotel & Spa', location: 'Гагра', shortDesc: 'Роскошный отель на первой линии с парком.', fullDesc: 'Amra Park-Hotel & Spa расположен в дендропарке прямо на берегу моря.', price: 8500, extraTitle: 'Удобства', extraDesc: '✓ Первая линия  ✓ Spa-центр  ✓ Бассейн  ✓ Ресторан', gallery: [{ media: 'https://picsum.photos/seed/h1a/800/600', isVideo: false }, { media: 'https://picsum.photos/seed/h1b/800/600', isVideo: false }], rooms: [{ name: 'Стандарт (Вид на горы)', price: 8500 }, { name: 'Делюкс (Вид на море)', price: 12000 }] },
+            { id: 'h_abkhazia', title: 'Отель «Абхазия»', location: 'Новый Афон', shortDesc: 'Уютный отель в центре святых мест.', fullDesc: 'Комфортабельный отель рядом с монастырём и водопадом.', price: 4000, extraTitle: 'Удобства', extraDesc: '✓ Центр города  ✓ Завтраки  ✓ Wi-Fi  ✓ Парковка', gallery: [{ media: 'https://picsum.photos/seed/h2a/800/600', isVideo: false }], rooms: [{ name: 'Эконом', price: 4000 }, { name: 'Улучшенный', price: 5500 }] }
+        ];
+
+        let tourMainPendingFile = null;
+        let sectionActive = 'tours';
+
+        function normalizeHotel(h) {
+            const g = ApsnyMedia.hotelGallery(h);
+            return {
+                ...h,
+                gallery: g.length ? g : [{ media: 'https://picsum.photos/seed/hotel/800/600', isVideo: false }],
+                rooms: Array.isArray(h.rooms) && h.rooms.length ? h.rooms : [{ name: 'Стандарт', price: h.price || 0 }],
+            };
+        }
+
+        async function persistTours() {
+            if (useApi) {
+                const res = await fetch('/api/tours', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbTours),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'Не удалось сохранить экскурсии на сервере');
+                    return false;
+                }
+            } else {
+                localStorage.setItem(LS_TOURS, JSON.stringify(dbTours));
+            }
+            await renderList();
+            return true;
+        }
+
+        async function persistHotels() {
+            if (useApi) {
+                const res = await fetch('/api/hotels', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbHotels),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'Не удалось сохранить отели на сервере');
+                    return false;
+                }
+            } else {
+                localStorage.setItem(LS_HOTELS, JSON.stringify(dbHotels));
+            }
+            await renderHotelsList();
+            return true;
+        }
+
+        async function loadAll() {
+            try {
+                const r = await fetch('/api/health');
+                if (!r.ok) throw new Error('no api');
+                useApi = true;
+                document.getElementById('api-status').classList.remove('hidden');
+                const [tours, hotels] = await Promise.all([
+                    fetch('/api/tours').then((x) => x.json()),
+                    fetch('/api/hotels').then((x) => x.json()),
+                ]);
+                dbTours = tours;
+                dbHotels = hotels.map(normalizeHotel);
+            } catch {
+                useApi = false;
+                document.getElementById('api-status').classList.add('hidden');
+                dbTours = JSON.parse(localStorage.getItem(LS_TOURS));
+                if (!dbTours || !dbTours.length) {
+                    dbTours = defaultTours;
+                    localStorage.setItem(LS_TOURS, JSON.stringify(dbTours));
+                }
+                let raw = JSON.parse(localStorage.getItem(LS_HOTELS));
+                if (!raw || !raw.length) {
+                    dbHotels = defaultHotels.map(normalizeHotel);
+                    localStorage.setItem(LS_HOTELS, JSON.stringify(dbHotels));
+                } else {
+                    dbHotels = raw.map(normalizeHotel);
+                }
+            }
+            const hm = document.getElementById('upload-hint-main');
+            if (hm) {
+                hm.textContent = useApi
+                    ? 'Файлы сохраняются на сервере (папка server/uploads).'
+                    : 'Офлайн-режим: медиа в IndexedDB этого браузера.';
+            }
+            await renderList();
+            await renderHotelsList();
+        }
+
+        function switchSection(id) {
+            sectionActive = id;
+            document.getElementById('section-tours').classList.toggle('hidden', id !== 'tours');
+            document.getElementById('section-hotels').classList.toggle('hidden', id !== 'hotels');
+            const nt = document.getElementById('nav-tours');
+            const nh = document.getElementById('nav-hotels');
+            nt.className = 'w-full text-left px-4 py-3 rounded-xl font-bold transition-all ' + (id === 'tours' ? 'nav-btn-active' : 'nav-btn-idle font-semibold');
+            nh.className = 'w-full text-left px-4 py-3 rounded-xl font-bold transition-all ' + (id === 'hotels' ? 'nav-btn-active' : 'nav-btn-idle font-semibold');
+        }
+
+        async function renderList() {
+            const list = document.getElementById('admin-list');
+            list.innerHTML = '';
+            for (let index = 0; index < dbTours.length; index++) {
+                const t = dbTours[index];
+                const thumb = await ApsnyMedia.getBlobUrl(t.mainMedia);
+                const mediaHtml = t.isMainVideo
+                    ? `<video src="${thumb}" muted class="w-16 h-16 rounded-xl object-cover border border-slate-700"></video>`
+                    : `<img src="${thumb}" alt="" class="w-16 h-16 rounded-xl object-cover border border-slate-700">`;
+                list.innerHTML += `
+                    <div class="glass-panel p-5 rounded-2xl flex items-center space-x-4 hover:border-emerald-500/50 transition-colors">
+                        ${mediaHtml}
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-lg truncate">${escapeHtml(t.title)}</h3>
+                            <p class="text-xs text-slate-400 mt-1">${t.price} ₽ | ${t.attractions.length} остановок</p>
+                        </div>
+                        <div class="flex flex-col space-y-2 shrink-0">
+                            <button onclick="openEditor(${index})" class="text-emerald-400 hover:text-emerald-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteTour(${index})" class="text-rose-400 hover:text-rose-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        async function renderHotelsList() {
+            const list = document.getElementById('admin-hotels-list');
+            list.innerHTML = '';
+            for (let index = 0; index < dbHotels.length; index++) {
+                const h = dbHotels[index];
+                const first = h.gallery[0];
+                const thumb = await ApsnyMedia.getBlobUrl(first.media);
+                const imgHtml = first.isVideo
+                    ? `<video src="${thumb}" muted class="w-16 h-16 rounded-xl object-cover border border-slate-700"></video>`
+                    : `<img src="${thumb}" alt="" class="w-16 h-16 rounded-xl object-cover border border-slate-700">`;
+                list.innerHTML += `
+                    <div class="glass-panel p-5 rounded-2xl flex items-center space-x-4 hover:border-emerald-500/50 transition-colors">
+                        ${imgHtml}
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-lg truncate">${escapeHtml(h.title)}</h3>
+                            <p class="text-xs text-slate-400 mt-1">${escapeHtml(h.location)} · от ${h.price} ₽ · ${h.gallery.length} медиа</p>
+                        </div>
+                        <div class="flex flex-col space-y-2 shrink-0">
+                            <button onclick="openHotelEditor(${index})" class="text-emerald-400 hover:text-emerald-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteHotel(${index})" class="text-rose-400 hover:text-rose-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        async function updateMainPreview() {
+            const urlField = document.getElementById('edit-media').value.trim();
+            const box = document.getElementById('edit-main-preview');
+            const isVid = document.getElementById('edit-main-is-video').checked;
+            let src = urlField;
+            if (tourMainPendingFile) {
+                src = URL.createObjectURL(tourMainPendingFile);
+            } else if (ApsnyMedia.isLocalRef(urlField)) {
+                src = await ApsnyMedia.getBlobUrl(urlField);
+            }
+            if (!src) {
+                box.innerHTML = '<span class="text-slate-500 text-sm">Предпросмотр</span>';
+                return;
+            }
+            box.innerHTML = isVid
+                ? `<video src="${src}" class="w-full max-h-52 object-contain" controls muted playsinline></video>`
+                : `<img src="${src}" class="w-full max-h-52 object-contain" alt="">`;
+        }
+
+        document.getElementById('edit-media-file').addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            tourMainPendingFile = f || null;
+            if (f) {
+                document.getElementById('edit-main-is-video').checked = ApsnyMedia.guessIsVideo(f);
+                document.getElementById('edit-media').value = '';
+            }
+            document.getElementById('edit-main-media-ref').textContent = tourMainPendingFile ? 'Файл выбран — сохранится при нажатии «Сохранить»' : '';
+            updateMainPreview();
+        });
+        document.getElementById('edit-media').addEventListener('input', () => {
+            tourMainPendingFile = null;
+            document.getElementById('edit-media-file').value = '';
+            document.getElementById('edit-main-media-ref').textContent = '';
+            updateMainPreview();
+        });
+        document.getElementById('edit-main-is-video').addEventListener('change', updateMainPreview);
+
+        function openEditor(index = null) {
+            tourMainPendingFile = null;
+            document.getElementById('edit-media-file').value = '';
+            const modal = document.getElementById('editor-modal');
+            const panel = document.getElementById('editor-panel');
+            const container = document.getElementById('attractions-container');
+            container.innerHTML = '';
+
+            if (index !== null) {
+                const t = dbTours[index];
+                document.getElementById('editor-title').innerText = 'Редактировать: ' + t.title;
+                document.getElementById('edit-id').value = index;
+                document.getElementById('edit-name').value = t.title;
+                document.getElementById('edit-price').value = t.price;
+                document.getElementById('edit-short').value = t.shortDesc;
+                document.getElementById('edit-full').value = t.fullDesc;
+                document.getElementById('edit-meta').value = t.meta;
+                document.getElementById('edit-route').value = t.extraDesc;
+                document.getElementById('edit-media').value = ApsnyMedia.isLocalRef(t.mainMedia) ? '' : t.mainMedia;
+                document.getElementById('edit-main-is-video').checked = !!t.isMainVideo;
+                document.getElementById('edit-main-media-ref').textContent = ApsnyMedia.isLocalRef(t.mainMedia) ? t.mainMedia : '';
+                t.attractions.forEach((a) => addAttractionField(a));
+            } else {
+                document.getElementById('editor-title').innerText = 'Новое направление';
+                document.getElementById('edit-id').value = 'new';
+                ['name', 'price', 'short', 'full', 'meta', 'route', 'media'].forEach((id) => {
+                    document.getElementById('edit-' + id).value = '';
+                });
+                document.getElementById('edit-main-is-video').checked = false;
+                document.getElementById('edit-main-media-ref').textContent = '';
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+            updateMainPreview();
+        }
+
+        function closeEditor() {
+            const panel = document.getElementById('editor-panel');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.getElementById('editor-modal').classList.add('hidden');
+                document.getElementById('editor-modal').classList.remove('flex');
+            }, 300);
+        }
+
+        function addAttractionField(data = null) {
+            const container = document.getElementById('attractions-container');
+            const id = Date.now() + '_' + Math.random().toString(36).slice(2);
+            const name = data ? escapeAttr(data.name) : '';
+            const desc = data ? escapeAttr(data.desc) : '';
+            const mediaUrl = data && !ApsnyMedia.isLocalRef(data.media) ? escapeAttr(data.media) : '';
+            const isVideo = data ? !!data.isVideo : false;
+            const refLabel = data && ApsnyMedia.isLocalRef(data.media) ? data.media : '';
+
+            const html = `
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700 attr-item relative" id="attr-${id}" data-pending-key="${id}">
+                    <button type="button" onclick="document.getElementById('attr-${id}').remove()" class="absolute top-2 right-2 text-rose-500 hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+                    <input type="text" placeholder="Название локации" value="${name}" class="attr-name w-full mb-2 px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm outline-none text-white">
+                    <textarea placeholder="Описание" class="attr-desc w-full mb-2 px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm outline-none text-white">${desc}</textarea>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Ссылка на медиа</label>
+                    <input type="text" placeholder="https://…" value="${mediaUrl}" class="attr-media-url w-full mb-2 px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm outline-none text-white">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Или загрузить файл</label>
+                    <input type="file" accept="image/*,video/*" class="attr-media-file w-full mb-2 text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:bg-emerald-600 file:text-white file:border-0">
+                    <input type="hidden" class="attr-media-ref" value="${refLabel}">
+                    <label class="inline-flex items-center gap-2 text-xs text-slate-300 mb-2 cursor-pointer">
+                        <input type="checkbox" class="attr-is-video rounded border-slate-500 bg-slate-700 text-emerald-500" ${isVideo ? 'checked' : ''}>
+                        Это видео
+                    </label>
+                    <div class="attr-preview rounded-lg overflow-hidden border border-slate-600 bg-black/20 min-h-[80px] flex items-center justify-center text-slate-500 text-xs">Предпросмотр</div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+            const row = document.getElementById('attr-' + id);
+            const fileInput = row.querySelector('.attr-media-file');
+            const urlInput = row.querySelector('.attr-media-url');
+            const refInput = row.querySelector('.attr-media-ref');
+            const vidChk = row.querySelector('.attr-is-video');
+            const prev = row.querySelector('.attr-preview');
+
+            async function refreshAttrPreview() {
+                const u = urlInput.value.trim();
+                const ref = refInput.value.trim();
+                let src = u || '';
+                const pending = fileInput.files && fileInput.files[0];
+                if (pending) {
+                    src = URL.createObjectURL(pending);
+                } else if (ApsnyMedia.isLocalRef(ref)) {
+                    src = await ApsnyMedia.getBlobUrl(ref);
+                }
+                const asVideo = vidChk.checked || ApsnyMedia.guessIsVideo(pending, u);
+                if (!src) {
+                    prev.innerHTML = 'Нет медиа';
+                    return;
+                }
+                prev.innerHTML = asVideo
+                    ? `<video src="${src}" class="w-full max-h-36 object-contain" muted playsinline controls></video>`
+                    : `<img src="${src}" class="w-full max-h-36 object-contain" alt="">`;
+            }
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files && fileInput.files[0]) {
+                    urlInput.value = '';
+                    refInput.value = '';
+                    vidChk.checked = ApsnyMedia.guessIsVideo(fileInput.files[0]);
+                }
+                refreshAttrPreview();
+            });
+            urlInput.addEventListener('input', () => {
+                fileInput.value = '';
+                refInput.value = '';
+                refreshAttrPreview();
+            });
+            vidChk.addEventListener('change', refreshAttrPreview);
+            refreshAttrPreview();
+        }
+
+        function escapeAttr(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        async function saveTour() {
+            const index = document.getElementById('edit-id').value;
+            const prevTour = index !== 'new' ? dbTours[+index] : null;
+
+            let mainMedia = document.getElementById('edit-media').value.trim();
+            let isMainVideo = document.getElementById('edit-main-is-video').checked;
+
+            if (tourMainPendingFile) {
+                mainMedia = await ApsnyMedia.saveFile(tourMainPendingFile);
+                isMainVideo = ApsnyMedia.guessIsVideo(tourMainPendingFile);
+                document.getElementById('edit-main-is-video').checked = isMainVideo;
+            } else if (!mainMedia && prevTour) {
+                mainMedia = prevTour.mainMedia;
+                if (!document.getElementById('edit-media').value.trim() && !ApsnyMedia.isLocalRef(mainMedia)) {
+                    /* keep external URL from prev */
+                }
+            }
+
+            if (!mainMedia) {
+                alert('Укажите главное фото/видео: ссылка или файл.');
+                return;
+            }
+
+            if (!isMainVideo && ApsnyMedia.guessIsVideo(null, mainMedia)) {
+                isMainVideo = true;
+            }
+
+            const attrItems = document.querySelectorAll('.attr-item');
+            const attractions = [];
+            const oldRefs = prevTour ? ApsnyMedia.collectRefsFromTour(prevTour) : [];
+
+            for (const item of attrItems) {
+                const urlEl = item.querySelector('.attr-media-url');
+                const refEl = item.querySelector('.attr-media-ref');
+                const fileEl = item.querySelector('.attr-media-file');
+                let media = urlEl.value.trim();
+                let isVideo = item.querySelector('.attr-is-video').checked;
+                const nm = item.querySelector('.attr-name').value.trim();
+
+                if (fileEl.files && fileEl.files[0]) {
+                    media = await ApsnyMedia.saveFile(fileEl.files[0]);
+                    isVideo = ApsnyMedia.guessIsVideo(fileEl.files[0]);
+                } else if (!media && refEl.value.trim()) {
+                    media = refEl.value.trim();
+                }
+
+                if (!nm && !media) continue;
+
+                attractions.push({
+                    name: item.querySelector('.attr-name').value,
+                    desc: item.querySelector('.attr-desc').value,
+                    media,
+                    isVideo: isVideo || ApsnyMedia.guessIsVideo(null, media),
+                });
+            }
+
+            const tourData = {
+                id: index === 'new' ? 't_' + Date.now() : prevTour.id,
+                title: document.getElementById('edit-name').value,
+                shortDesc: document.getElementById('edit-short').value,
+                fullDesc: document.getElementById('edit-full').value,
+                price: parseInt(document.getElementById('edit-price').value, 10) || 0,
+                meta: document.getElementById('edit-meta').value,
+                extraTitle: 'Маршрут',
+                extraDesc: document.getElementById('edit-route').value,
+                mainMedia,
+                isMainVideo,
+                attractions,
+            };
+
+            const newRefs = ApsnyMedia.collectRefsFromTour(tourData);
+            const orphaned = oldRefs.filter((r) => !newRefs.includes(r));
+            await ApsnyMedia.deleteRefs(orphaned.filter(ApsnyMedia.isLocalRef));
+
+            if (index === 'new') {
+                dbTours.push(tourData);
+            } else {
+                dbTours[+index] = tourData;
+            }
+
+            tourMainPendingFile = null;
+            const savedTour = await persistTours();
+            if (!savedTour) {
+                await loadAll();
+                return;
+            }
+            closeEditor();
+            flashSaveBtn(document.querySelector('#editor-modal button[onclick="saveTour()"]'));
+        }
+
+        async function deleteTour(index) {
+            if (!confirm('Удалить это направление?')) return;
+            const t = dbTours[index];
+            await ApsnyMedia.deleteRefs(ApsnyMedia.collectRefsFromTour(t).filter(ApsnyMedia.isLocalRef));
+            dbTours.splice(index, 1);
+            if (!(await persistTours())) await loadAll();
+        }
+
+        function flashSaveBtn(btn) {
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Сохранено!';
+            btn.classList.replace('bg-emerald-600', 'bg-teal-500');
+            setTimeout(() => {
+                btn.innerHTML = origHTML;
+                btn.classList.replace('bg-teal-500', 'bg-emerald-600');
+            }, 2000);
+        }
+
+        async function resetData() {
+            if (!confirm('Сбросить экскурсии и отели к данным из шаблона index.html? Загрузки на сервере, не используемые в данных, будут удалены.')) return;
+            if (useApi) {
+                const res = await fetch('/api/reset', { method: 'POST' });
+                if (!res.ok) {
+                    alert('Сброс на сервере не выполнен');
+                    return;
+                }
+                await loadAll();
+                return;
+            }
+            localStorage.removeItem(LS_TOURS);
+            localStorage.removeItem(LS_HOTELS);
+            location.reload();
+        }
+
+        /* --- Гостиницы --- */
+
+        function openHotelEditor(index = null) {
+            const modal = document.getElementById('hotel-editor-modal');
+            const panel = document.getElementById('hotel-editor-panel');
+            document.getElementById('gallery-container').innerHTML = '';
+            document.getElementById('rooms-container').innerHTML = '';
+
+            if (index !== null) {
+                const h = dbHotels[index];
+                document.getElementById('hotel-editor-title').innerText = 'Редактировать: ' + h.title;
+                document.getElementById('hedit-id').value = index;
+                document.getElementById('hedit-title').value = h.title;
+                document.getElementById('hedit-location').value = h.location;
+                document.getElementById('hedit-price').value = h.price;
+                document.getElementById('hedit-extra-title').value = h.extraTitle || 'Удобства';
+                document.getElementById('hedit-short').value = h.shortDesc;
+                document.getElementById('hedit-full').value = h.fullDesc;
+                document.getElementById('hedit-extra-desc').value = h.extraDesc;
+                h.gallery.forEach((g) => addGalleryRow(g));
+                h.rooms.forEach((r) => addRoomRow(r));
+            } else {
+                document.getElementById('hotel-editor-title').innerText = 'Новая гостиница';
+                document.getElementById('hedit-id').value = 'new';
+                document.getElementById('hedit-title').value = '';
+                document.getElementById('hedit-location').value = '';
+                document.getElementById('hedit-price').value = '';
+                document.getElementById('hedit-extra-title').value = 'Удобства';
+                document.getElementById('hedit-short').value = '';
+                document.getElementById('hedit-full').value = '';
+                document.getElementById('hedit-extra-desc').value = '';
+                addGalleryRow();
+                addRoomRow();
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+        }
+
+        function closeHotelEditor() {
+            const panel = document.getElementById('hotel-editor-panel');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.getElementById('hotel-editor-modal').classList.add('hidden');
+                document.getElementById('hotel-editor-modal').classList.remove('flex');
+            }, 300);
+        }
+
+        function addGalleryRow(data = null) {
+            const container = document.getElementById('gallery-container');
+            const id = 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const url = data && !ApsnyMedia.isLocalRef(data.media) ? escapeAttr(data.media) : '';
+            const ref = data && ApsnyMedia.isLocalRef(data.media) ? data.media : '';
+            const isVid = data ? !!data.isVideo : false;
+
+            container.insertAdjacentHTML('beforeend', `
+                <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700 gal-item relative" id="${id}">
+                    <button type="button" onclick="document.getElementById('${id}').remove()" class="absolute top-2 right-2 text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">URL</label>
+                    <input type="text" class="gal-url w-full mb-2 px-3 py-2 rounded bg-slate-800 border border-slate-600 text-sm text-white" placeholder="https://…" value="${url}">
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Файл</label>
+                    <input type="file" accept="image/*,video/*" class="gal-file w-full mb-2 text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:bg-emerald-600 file:text-white file:border-0">
+                    <input type="hidden" class="gal-ref" value="${ref}">
+                    <label class="inline-flex items-center gap-2 text-xs text-slate-300 mb-2 cursor-pointer">
+                        <input type="checkbox" class="gal-is-video rounded border-slate-500 bg-slate-700 text-emerald-500" ${isVid ? 'checked' : ''}> Видео
+                    </label>
+                    <div class="gal-preview rounded-lg overflow-hidden border border-slate-600 bg-black/20 min-h-[72px] flex items-center justify-center text-slate-500 text-xs"></div>
+                </div>`);
+
+            const row = document.getElementById(id);
+            const urlInput = row.querySelector('.gal-url');
+            const fileInput = row.querySelector('.gal-file');
+            const refInput = row.querySelector('.gal-ref');
+            const vidChk = row.querySelector('.gal-is-video');
+            const prev = row.querySelector('.gal-preview');
+
+            async function refreshGal() {
+                const u = urlInput.value.trim();
+                const r = refInput.value.trim();
+                let src = u;
+                const pending = fileInput.files && fileInput.files[0];
+                if (pending) src = URL.createObjectURL(pending);
+                else if (ApsnyMedia.isLocalRef(r)) src = await ApsnyMedia.getBlobUrl(r);
+                const asV = vidChk.checked || ApsnyMedia.guessIsVideo(pending, u);
+                if (!src) {
+                    prev.textContent = 'Предпросмотр';
+                    return;
+                }
+                prev.innerHTML = asV
+                    ? `<video src="${src}" class="w-full max-h-32 object-contain" muted playsinline controls></video>`
+                    : `<img src="${src}" class="w-full max-h-32 object-contain" alt="">`;
+            }
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files && fileInput.files[0]) {
+                    urlInput.value = '';
+                    refInput.value = '';
+                    vidChk.checked = ApsnyMedia.guessIsVideo(fileInput.files[0]);
+                }
+                refreshGal();
+            });
+            urlInput.addEventListener('input', () => {
+                fileInput.value = '';
+                refInput.value = '';
+                refreshGal();
+            });
+            vidChk.addEventListener('change', refreshGal);
+            refreshGal();
+        }
+
+        function addRoomRow(data = null) {
+            const container = document.getElementById('rooms-container');
+            const id = 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const name = data ? escapeAttr(data.name) : '';
+            const price = data ? String(data.price) : '';
+            container.insertAdjacentHTML('beforeend', `
+                <div class="flex gap-2 items-center room-row" id="${id}">
+                    <input type="text" class="room-name flex-1 px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm" placeholder="Название номера" value="${name}">
+                    <input type="number" class="room-price w-28 px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm" placeholder="₽" value="${price}">
+                    <button type="button" onclick="document.getElementById('${id}').remove()" class="text-rose-400 p-2"><i class="fa-solid fa-trash"></i></button>
+                </div>`);
+        }
+
+        async function saveHotel() {
+            const index = document.getElementById('hedit-id').value;
+            const prev = index !== 'new' ? dbHotels[+index] : null;
+            const gallery = [];
+            const oldRefs = prev ? ApsnyMedia.collectRefsFromHotel(prev) : [];
+
+            const galRows = document.querySelectorAll('.gal-item');
+            for (const row of galRows) {
+                const urlEl = row.querySelector('.gal-url');
+                const refEl = row.querySelector('.gal-ref');
+                const fileEl = row.querySelector('.gal-file');
+                let media = urlEl.value.trim();
+                let isVideo = row.querySelector('.gal-is-video').checked;
+                if (fileEl.files && fileEl.files[0]) {
+                    media = await ApsnyMedia.saveFile(fileEl.files[0]);
+                    isVideo = ApsnyMedia.guessIsVideo(fileEl.files[0]);
+                } else if (!media && refEl.value.trim()) {
+                    media = refEl.value.trim();
+                }
+                if (!media) continue;
+                if (!isVideo && ApsnyMedia.guessIsVideo(null, media)) isVideo = true;
+                gallery.push({ media, isVideo });
+            }
+
+            if (!gallery.length) {
+                alert('Добавьте хотя бы одно фото или видео.');
+                return;
+            }
+
+            const rooms = [];
+            document.querySelectorAll('.room-row').forEach((row) => {
+                const name = row.querySelector('.room-name').value.trim();
+                const price = parseInt(row.querySelector('.room-price').value, 10) || 0;
+                if (name) rooms.push({ name, price });
+            });
+            if (!rooms.length) {
+                alert('Добавьте хотя бы одну категорию номера.');
+                return;
+            }
+
+            const basePrice = parseInt(document.getElementById('hedit-price').value, 10) || rooms[0].price;
+
+            const hotel = {
+                id: index === 'new' ? 'h_' + Date.now() : prev.id,
+                title: document.getElementById('hedit-title').value.trim(),
+                location: document.getElementById('hedit-location').value.trim(),
+                shortDesc: document.getElementById('hedit-short').value,
+                fullDesc: document.getElementById('hedit-full').value,
+                price: basePrice,
+                extraTitle: document.getElementById('hedit-extra-title').value.trim() || 'Удобства',
+                extraDesc: document.getElementById('hedit-extra-desc').value,
+                gallery,
+                rooms,
+            };
+
+            const newRefs = ApsnyMedia.collectRefsFromHotel(hotel);
+            const orphaned = oldRefs.filter((r) => !newRefs.includes(r));
+            await ApsnyMedia.deleteRefs(orphaned.filter(ApsnyMedia.isLocalRef));
+
+            if (index === 'new') dbHotels.push(hotel);
+            else dbHotels[+index] = hotel;
+
+            const savedHotel = await persistHotels();
+            if (!savedHotel) {
+                await loadAll();
+                return;
+            }
+            closeHotelEditor();
+            flashSaveBtn(document.querySelector('#hotel-editor-modal button[onclick="saveHotel()"]'));
+        }
+
+        async function deleteHotel(index) {
+            if (!confirm('Удалить гостиницу?')) return;
+            const h = dbHotels[index];
+            await ApsnyMedia.deleteRefs(ApsnyMedia.collectRefsFromHotel(h).filter(ApsnyMedia.isLocalRef));
+            dbHotels.splice(index, 1);
+            if (!(await persistHotels())) await loadAll();
+        }
+
+        loadAll();
+    </script>
+</body>
+</html>
