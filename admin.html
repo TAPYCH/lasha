@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Апсны-Гид | Панель Администратора</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,23 +15,41 @@
         .nav-btn-active { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
         .nav-btn-idle { color: #94a3b8; }
         .nav-btn-idle:hover { background: #1e293b; }
+        .mob-tab-active {
+            color: #34d399;
+            border-bottom-color: rgba(16, 185, 129, 0.8);
+            font-weight: 700;
+        }
+        .mob-tab-idle {
+            color: #94a3b8;
+            border-bottom-color: transparent;
+            font-weight: 600;
+        }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-[100dvh] min-h-0 flex flex-col overflow-hidden">
 
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center z-10">
-        <div class="flex items-center space-x-3">
-            <i class="fa-solid fa-user-shield text-emerald-500 text-2xl"></i>
-            <h1 class="text-xl font-bold">Admin Dashboard <span class="text-xs font-normal text-slate-400 ml-2 border border-slate-700 px-2 py-1 rounded">v2</span></h1>
-            <span id="api-status" class="hidden text-xs font-semibold text-emerald-400 ml-3 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25"><i class="fa-solid fa-link mr-1"></i>Сервер API</span>
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 md:px-6 md:py-4 flex flex-wrap gap-3 justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+            <i class="fa-solid fa-user-shield text-emerald-500 text-xl md:text-2xl shrink-0"></i>
+            <div class="min-w-0">
+                <h1 class="text-base md:text-xl font-bold truncate">Админка <span class="text-slate-400 font-normal hidden sm:inline">· Апсны-Гид</span></h1>
+                <span id="api-status" class="hidden text-[10px] md:text-xs font-semibold text-emerald-400 mt-1 inline-block px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25"><i class="fa-solid fa-link mr-1"></i>Сервер API</span>
+            </div>
         </div>
-        <div class="flex space-x-4">
-            <a href="index.html" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-sm font-semibold px-4 py-2 rounded-lg transition-all"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>Открыть сайт</a>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" onclick="resetData()" class="md:hidden text-rose-400 hover:bg-rose-500/10 text-xs font-bold px-3 py-2 rounded-lg border border-rose-500/30 transition-all">Сброс</button>
+            <a href="index.html" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-xs md:text-sm font-semibold px-3 md:px-4 py-2 rounded-lg transition-all whitespace-nowrap"><i class="fa-solid fa-arrow-up-right-from-square sm:mr-2"></i><span class="hidden sm:inline">Открыть сайт</span><span class="sm:hidden">Сайт</span></a>
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
-        <aside class="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex md:flex-col">
+    <nav class="md:hidden flex shrink-0 border-b border-slate-800 bg-slate-900/98">
+        <button type="button" id="mob-nav-tours" onclick="switchSection('tours')" class="flex-1 py-3 text-sm mob-tab-active border-b-2 transition-colors">Экскурсии</button>
+        <button type="button" id="mob-nav-hotels" onclick="switchSection('hotels')" class="flex-1 py-3 text-sm mob-tab-idle border-b-2 transition-colors">Гостиницы</button>
+    </nav>
+
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+        <aside class="w-56 lg:w-64 bg-slate-900 border-r border-slate-800 hidden md:flex md:flex-col shrink-0">
             <nav class="p-4 space-y-2">
                 <button type="button" id="nav-tours" onclick="switchSection('tours')" class="w-full text-left px-4 py-3 rounded-xl font-bold nav-btn-active"><i class="fa-solid fa-map-location-dot mr-3"></i>Экскурсии</button>
                 <button type="button" id="nav-hotels" onclick="switchSection('hotels')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition-all nav-btn-idle"><i class="fa-solid fa-hotel mr-3"></i>Гостиницы</button>
@@ -39,23 +57,23 @@
             </nav>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 relative">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5 md:p-6 relative min-w-0">
             <!-- Экскурсии -->
-            <div id="section-tours" class="max-w-5xl mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Управление направлениями</h2>
-                    <button onclick="openEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg transition-all"><i class="fa-solid fa-plus mr-2"></i>Добавить направление</button>
+            <div id="section-tours" class="max-w-3xl mx-auto w-full">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold leading-tight">Направления</h2>
+                    <button onclick="openEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 md:px-5 rounded-lg shadow-lg transition-all text-sm md:text-base w-full sm:w-auto shrink-0"><i class="fa-solid fa-plus mr-2"></i>Добавить</button>
                 </div>
-                <div id="admin-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="admin-list" class="grid grid-cols-1 gap-3 md:gap-4"></div>
             </div>
 
             <!-- Гостиницы -->
-            <div id="section-hotels" class="max-w-5xl mx-auto hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Управление гостиницами</h2>
-                    <button onclick="openHotelEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg transition-all"><i class="fa-solid fa-plus mr-2"></i>Добавить гостиницу</button>
+            <div id="section-hotels" class="max-w-3xl mx-auto w-full hidden">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 md:mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold leading-tight">Гостиницы</h2>
+                    <button onclick="openHotelEditor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-4 md:px-5 rounded-lg shadow-lg transition-all text-sm md:text-base w-full sm:w-auto shrink-0"><i class="fa-solid fa-plus mr-2"></i>Добавить</button>
                 </div>
-                <div id="admin-hotels-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="admin-hotels-list" class="grid grid-cols-1 gap-3 md:gap-4"></div>
             </div>
         </main>
     </div>
@@ -63,16 +81,16 @@
     <!-- Редактор экскурсий -->
     <div id="editor-modal" class="fixed inset-0 z-50 hidden justify-end">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeEditor()"></div>
-        <div class="w-full max-w-2xl bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="editor-panel">
-            <div class="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-900">
-                <h3 class="text-xl font-bold" id="editor-title">Добавить/Изменить</h3>
-                <button onclick="closeEditor()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        <div class="w-full max-w-full md:max-w-2xl shrink-0 bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="editor-panel">
+            <div class="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700 bg-slate-900 gap-2">
+                <h3 class="text-lg sm:text-xl font-bold truncate pr-2" id="editor-title">Добавить/Изменить</h3>
+                <button onclick="closeEditor()" class="text-slate-400 hover:text-white text-2xl shrink-0" aria-label="Закрыть">&times;</button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6 space-y-5">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-5">
                 <input type="hidden" id="edit-id">
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Название направления</label>
                         <input type="text" id="edit-name" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white placeholder-slate-400">
@@ -93,7 +111,7 @@
                     <textarea id="edit-full" rows="3" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white"></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Длительность</label>
                         <input type="text" id="edit-meta" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
@@ -132,9 +150,9 @@
                 </div>
             </div>
 
-            <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end space-x-3">
-                <button onclick="closeEditor()" class="px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
-                <button onclick="saveTour()" class="px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
+            <div class="p-4 sm:p-6 bg-slate-900 border-t border-slate-700 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 sm:space-x-0">
+                <button onclick="closeEditor()" class="w-full sm:w-auto px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
+                <button onclick="saveTour()" class="w-full sm:w-auto px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
             </div>
         </div>
     </div>
@@ -142,16 +160,16 @@
     <!-- Редактор гостиниц -->
     <div id="hotel-editor-modal" class="fixed inset-0 z-50 hidden justify-end">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeHotelEditor()"></div>
-        <div class="w-full max-w-2xl bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="hotel-editor-panel">
-            <div class="flex justify-between items-center p-6 border-b border-slate-700 bg-slate-900">
-                <h3 class="text-xl font-bold" id="hotel-editor-title">Гостиница</h3>
-                <button onclick="closeHotelEditor()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        <div class="w-full max-w-full md:max-w-2xl shrink-0 bg-slate-800 h-full relative z-10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="hotel-editor-panel">
+            <div class="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700 bg-slate-900 gap-2">
+                <h3 class="text-lg sm:text-xl font-bold truncate pr-2" id="hotel-editor-title">Гостиница</h3>
+                <button onclick="closeHotelEditor()" class="text-slate-400 hover:text-white text-2xl shrink-0" aria-label="Закрыть">&times;</button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6 space-y-5">
+            <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-5">
                 <input type="hidden" id="hedit-id">
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Название</label>
                         <input type="text" id="hedit-title" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
@@ -162,7 +180,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Цена от (₽ / ночь)</label>
                         <input type="number" id="hedit-price" class="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 outline-none focus:border-emerald-500 text-white">
@@ -206,9 +224,9 @@
                 </div>
             </div>
 
-            <div class="p-6 bg-slate-900 border-t border-slate-700 flex justify-end space-x-3">
-                <button onclick="closeHotelEditor()" class="px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
-                <button onclick="saveHotel()" class="px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
+            <div class="p-4 sm:p-6 bg-slate-900 border-t border-slate-700 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                <button onclick="closeHotelEditor()" class="w-full sm:w-auto px-6 py-3 rounded-lg font-bold text-slate-300 hover:bg-slate-800 transition-all">Отмена</button>
+                <button onclick="saveHotel()" class="w-full sm:w-auto px-6 py-3 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all"><i class="fa-solid fa-floppy-disk mr-2"></i>Сохранить</button>
             </div>
         </div>
     </div>
@@ -328,6 +346,12 @@
             const nh = document.getElementById('nav-hotels');
             nt.className = 'w-full text-left px-4 py-3 rounded-xl font-bold transition-all ' + (id === 'tours' ? 'nav-btn-active' : 'nav-btn-idle font-semibold');
             nh.className = 'w-full text-left px-4 py-3 rounded-xl font-bold transition-all ' + (id === 'hotels' ? 'nav-btn-active' : 'nav-btn-idle font-semibold');
+            const mt = document.getElementById('mob-nav-tours');
+            const mh = document.getElementById('mob-nav-hotels');
+            if (mt && mh) {
+                mt.className = 'flex-1 py-3 text-sm border-b-2 transition-colors ' + (id === 'tours' ? 'mob-tab-active' : 'mob-tab-idle');
+                mh.className = 'flex-1 py-3 text-sm border-b-2 transition-colors ' + (id === 'hotels' ? 'mob-tab-active' : 'mob-tab-idle');
+            }
         }
 
         async function renderList() {
@@ -340,15 +364,15 @@
                     ? `<video src="${thumb}" muted class="w-16 h-16 rounded-xl object-cover border border-slate-700"></video>`
                     : `<img src="${thumb}" alt="" class="w-16 h-16 rounded-xl object-cover border border-slate-700">`;
                 list.innerHTML += `
-                    <div class="glass-panel p-5 rounded-2xl flex items-center space-x-4 hover:border-emerald-500/50 transition-colors">
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4 hover:border-emerald-500/50 transition-colors">
                         ${mediaHtml}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-lg truncate">${escapeHtml(t.title)}</h3>
-                            <p class="text-xs text-slate-400 mt-1">${t.price} ₽ | ${t.attractions.length} остановок</p>
+                            <h3 class="font-bold text-base sm:text-lg leading-snug">${escapeHtml(t.title)}</h3>
+                            <p class="text-xs text-slate-400 mt-1">${t.price} ₽ · ${t.attractions.length} остановок</p>
                         </div>
-                        <div class="flex flex-col space-y-2 shrink-0">
-                            <button onclick="openEditor(${index})" class="text-emerald-400 hover:text-emerald-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteTour(${index})" class="text-rose-400 hover:text-rose-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        <div class="flex flex-row sm:flex-col gap-2 shrink-0 justify-end sm:justify-start">
+                            <button type="button" onclick="openEditor(${index})" class="flex-1 sm:flex-none text-emerald-400 hover:text-emerald-300 py-2 px-3 bg-slate-800 rounded-lg text-sm font-semibold"><i class="fa-solid fa-pen sm:mr-2"></i><span class="sm:hidden">Изм.</span></button>
+                            <button type="button" onclick="deleteTour(${index})" class="flex-1 sm:flex-none text-rose-400 hover:text-rose-300 py-2 px-3 bg-slate-800 rounded-lg text-sm font-semibold"><i class="fa-solid fa-trash sm:mr-2"></i><span class="sm:hidden">Удал.</span></button>
                         </div>
                     </div>`;
             }
@@ -365,15 +389,15 @@
                     ? `<video src="${thumb}" muted class="w-16 h-16 rounded-xl object-cover border border-slate-700"></video>`
                     : `<img src="${thumb}" alt="" class="w-16 h-16 rounded-xl object-cover border border-slate-700">`;
                 list.innerHTML += `
-                    <div class="glass-panel p-5 rounded-2xl flex items-center space-x-4 hover:border-emerald-500/50 transition-colors">
+                    <div class="glass-panel p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-4 hover:border-emerald-500/50 transition-colors">
                         ${imgHtml}
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-lg truncate">${escapeHtml(h.title)}</h3>
-                            <p class="text-xs text-slate-400 mt-1">${escapeHtml(h.location)} · от ${h.price} ₽ · ${h.gallery.length} медиа</p>
+                            <h3 class="font-bold text-base sm:text-lg leading-snug">${escapeHtml(h.title)}</h3>
+                            <p class="text-xs text-slate-400 mt-1 break-words">${escapeHtml(h.location)} · от ${h.price} ₽ · ${h.gallery.length} медиа</p>
                         </div>
-                        <div class="flex flex-col space-y-2 shrink-0">
-                            <button onclick="openHotelEditor(${index})" class="text-emerald-400 hover:text-emerald-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteHotel(${index})" class="text-rose-400 hover:text-rose-300 p-2 bg-slate-800 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        <div class="flex flex-row sm:flex-col gap-2 shrink-0 justify-end sm:justify-start">
+                            <button type="button" onclick="openHotelEditor(${index})" class="flex-1 sm:flex-none text-emerald-400 hover:text-emerald-300 py-2 px-3 bg-slate-800 rounded-lg text-sm font-semibold"><i class="fa-solid fa-pen sm:mr-2"></i><span class="sm:hidden">Изм.</span></button>
+                            <button type="button" onclick="deleteHotel(${index})" class="flex-1 sm:flex-none text-rose-400 hover:text-rose-300 py-2 px-3 bg-slate-800 rounded-lg text-sm font-semibold"><i class="fa-solid fa-trash sm:mr-2"></i><span class="sm:hidden">Удал.</span></button>
                         </div>
                     </div>`;
             }

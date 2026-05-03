@@ -27,9 +27,43 @@
         .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
         .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-top: 1px solid #e5e7eb; }
         
-        /* Карусель (горизонтальный скролл с прилипанием) */
+        /* Карусель туров (если понадобится) */
         .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 1rem; scrollbar-width: none; }
         .carousel-item { scroll-snap-align: center; flex: 0 0 85%; }
+
+        /* Галерея отеля: каждый кадр на всю ширину, листание без «пустоты» справа */
+        .hotel-gallery-scroll {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            gap: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            overscroll-behavior-x: contain;
+        }
+        .hotel-gallery-scroll::-webkit-scrollbar { display: none; }
+        .hotel-gallery-slide {
+            flex: 0 0 100%;
+            width: 100%;
+            min-width: 100%;
+            max-width: 100%;
+            height: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            box-sizing: border-box;
+            background: #111827;
+        }
+        .hotel-gallery-slide img,
+        .hotel-gallery-slide video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
         .auth-tab-active { background: white; color: #059669; box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-weight: 700; }
         .auth-tab-idle { color: #6b7280; font-weight: 600; }
@@ -183,10 +217,12 @@
                 <div id="tours-list" class="space-y-4"></div>
             </section>
 
-            <!-- ТАБ: ГОСТИНИЦЫ -->
-            <section id="tab-hotels" class="hidden p-4 fade-in">
-                <h3 class="text-2xl font-bold mb-4 text-gray-800">Где остановиться?</h3>
-                <div id="hotels-list" class="space-y-5"></div>
+            <!-- ТАБ: ГОСТИНИЦЫ (узкая колонка на больших экранах — без «растягивания») -->
+            <section id="tab-hotels" class="hidden fade-in">
+                <div class="mx-auto w-full max-w-lg md:max-w-xl lg:max-w-2xl px-4 py-4">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Где остановиться?</h3>
+                    <div id="hotels-list" class="space-y-5"></div>
+                </div>
             </section>
 
             <!-- ТАБ: ПРОФИЛЬ -->
@@ -252,7 +288,7 @@
         </button>
         
         <div class="flex-1 overflow-y-auto pb-32">
-            <div id="detail-media" class="w-full h-[45vh] relative bg-gray-200"></div>
+            <div id="detail-media" class="w-full h-[45vh] min-h-[220px] max-h-[65vh] relative bg-gray-900 overflow-hidden"></div>
 
             <div class="bg-white rounded-t-3xl -mt-8 relative z-10 p-6 shadow-[0_-15px_30px_rgba(0,0,0,0.1)]">
                 <h2 id="detail-title" class="text-3xl font-bold mb-2 text-gray-900 leading-tight"></h2>
@@ -871,12 +907,12 @@
                     ? `<video src="${mainUrl}" autoplay loop muted playsinline class="w-full h-full object-cover"></video>`
                     : `<img src="${mainUrl}" alt="" class="w-full h-full object-cover">`;
             } else {
-                let carousel = '<div class="carousel-container w-full h-full">';
+                let carousel = '<div class="hotel-gallery-scroll w-full h-full">';
                 for (const slide of ApsnyMedia.hotelGallery(currentItem)) {
                     const u = await ApsnyMedia.getBlobUrl(slide.media);
                     carousel += slide.isVideo
-                        ? `<div class="carousel-item h-full"><video src="${u}" autoplay loop muted playsinline class="w-full h-full object-cover"></video></div>`
-                        : `<div class="carousel-item h-full"><img src="${u}" alt="" class="w-full h-full object-cover"></div>`;
+                        ? `<div class="hotel-gallery-slide"><video src="${u}" autoplay loop muted playsinline></video></div>`
+                        : `<div class="hotel-gallery-slide"><img src="${u}" alt=""></div>`;
                 }
                 carousel += '</div>';
                 mediaBox.innerHTML = carousel;
